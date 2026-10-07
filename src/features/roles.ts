@@ -159,14 +159,21 @@ async function syncMemberTag(ctx: Context, chat: ChatData, userId: number): Prom
   }
 }
 
-/** 依序更新多個人的標籤，回傳各結果的數量 */
+/** 批次同步時每人之間的間隔；Telegram 對 setChatMemberTag 限速頗嚴（約 25 次就會被擋），放慢可減少撞牆 */
+const SYNC_PACE_MS = 1_500;
+
+/** 依序更新多個人的標籤，回傳各結果的數量；paceMs 為每人之間的等待毫秒數 */
 async function syncMemberTags(
   ctx: Context,
   chat: ChatData,
   userIds: Iterable<number>,
+  paceMs = 0,
 ): Promise<Record<TagSyncResult, number>> {
   const count: Record<TagSyncResult, number> = { ok: 0, skipped: 0, failed: 0 };
-  for (const id of userIds) count[await syncMemberTag(ctx, chat, id)]++;
+  for (const id of userIds) {
+    count[await syncMemberTag(ctx, chat, id)]++;
+    if (paceMs > 0) await new Promise((r) => setTimeout(r, paceMs));
+  }
   return count;
 }
 
@@ -240,14 +247,24 @@ roles.command(
       await ctx.reply("目前沒有任何人加入身分組，不用同步。");
       return;
     }
-    const count = await syncMemberTags(ctx, chat, userIds);
-    log(ctx, `/role_sync_tags 成功 ${count.ok}、跳過 ${count.skipped}、失敗 ${count.failed}`);
-    const lines = [`🏷 成員標籤同步完成：${count.ok} 人已更新。`];
-    if (count.skipped) lines.push(`跳過 ${count.skipped} 人（管理員或已不在群組裡，標籤只能設給一般成員）。`);
-    if (count.failed) {
-      lines.push(`失敗 ${count.failed} 人，請確認 bot 是管理員且有「管理標籤」權限，再執行一次。`);
-    }
-    await ctx.reply(lines.join("\n"));
+    await ctx.reply(`🏷 開始同步 ${userIds.size} 人的成員標籤，人多時 Telegram 會限速，請稍等，完成後會再通知。`);
+    // 放到背景跑，碰到限速要等幾十秒時才不會卡住其他訊息
+    void (async () => {
+      try {
+        const count = await syncMemberTags(ctx, chat, userIds, SYNC_PACE_MS);
+        log(ctx, `/role_sync_tags 成功 ${count.ok}、跳過 ${count.skipped}、失敗 ${count.failed}`);
+        const lines = [`🏷 成員標籤同步完成：${count.ok} 人已更新。`];
+        if (count.skipped) {
+          lines.push(`跳過 ${count.skipped} 人（管理員或已不在群組裡，標籤只能設給一般成員）。`);
+        }
+        if (count.failed) {
+          lines.push(`失敗 ${count.failed} 人，請確認 bot 是管理員且有「管理標籤」權限，再執行一次即可補上。`);
+        }
+        await ctx.reply(lines.join("\n"));
+      } catch (err) {
+        warn(ctx, "/role_sync_tags 中斷", err);
+      }
+    })();
   }),
 );
 

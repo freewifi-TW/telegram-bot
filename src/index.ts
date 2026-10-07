@@ -1,3 +1,4 @@
+import { autoRetry } from "@grammyjs/auto-retry";
 import { Bot, GrammyError, HttpError } from "grammy";
 import type { BotCommand } from "grammy/types";
 import { config } from "./config.js";
@@ -11,6 +12,10 @@ import { toUserInfo } from "./util/html.js";
 import { where } from "./util/log.js";
 
 const bot = new Bot(config.botToken);
+
+// Telegram 回 429 時依它給的秒數等待後重試（例如一次設定很多人的成員標籤），
+// 等太久的就放棄丟回錯誤，避免卡住
+bot.api.config.use(autoRetry({ maxRetryAttempts: 3, maxDelaySeconds: 90 }));
 
 bot.catch(({ error, ctx }) => {
   const prefix = `${where(ctx)} update ${ctx.update.update_id}`;
