@@ -2,6 +2,7 @@ import { autoRetry } from "@grammyjs/auto-retry";
 import { Bot, GrammyError, HttpError } from "grammy";
 import type { BotCommand } from "grammy/types";
 import { config } from "./config.js";
+import { allowlist } from "./features/allowlist.js";
 import { announce, broadcast, OFFLINE_TEXT, ONLINE_TEXT } from "./features/announce.js";
 import { fixup } from "./features/fixup.js";
 import { handleMemeStart, memes } from "./features/memes.js";
@@ -28,6 +29,9 @@ bot.catch(({ error, ctx }) => {
     console.error(`${prefix} 未預期的錯誤：`, error);
   }
 });
+
+// 群組白名單要放在最前面，不在名單內的群組與外人連使用者紀錄都不留
+bot.use(allowlist);
 
 // 記錄使用者最新的名稱與 username（tag 時才會是最新的），以及群組名稱
 bot.use(async (ctx, next) => {

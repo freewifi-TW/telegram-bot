@@ -52,6 +52,7 @@ npm run typecheck
 | --- | --- | --- |
 | `BOT_TOKEN` | ✅ | BotFather 給的 token |
 | `OWNER_IDS` | | 你的 user id，逗號分隔。填了之後不管群組權限都視為管理員 |
+| `ALLOWED_CHAT_IDS` | | 只服務這些群組，群組 id 逗號分隔（超級群組是 `-100` 開頭的負數）。bot 被拉進其他群組會留言後自動退出，私訊只回應這些群組的成員與 `OWNER_IDS`。留空不限制。群組 id 可在 `data/bot.json` 的 `chats` 底下查到 |
 | `DATA_FILE` | | 資料檔路徑，預設 `./data/bot.json` |
 | `DATA_BACKUP_KEEP` | | 每日備份保留份數，預設 7，填 0 關閉 |
 | `SAUCENAO_API_KEY` | | 到 <https://saucenao.com/user.php?page=search-api> 免費申請，沒填也能用但額度很低 |

@@ -14,12 +14,19 @@ function optional(name: string, fallback = ""): string {
   return value && value.trim() !== "" ? value.trim() : fallback;
 }
 
-export const config = {
-  botToken: required("BOT_TOKEN"),
-  ownerIds: optional("OWNER_IDS")
+/** 逗號分隔的整數清單 */
+function idList(value: string): number[] {
+  return value
     .split(",")
     .map((s) => Number(s.trim()))
-    .filter((n) => Number.isInteger(n) && n > 0),
+    .filter((n) => Number.isInteger(n) && n !== 0);
+}
+
+export const config = {
+  botToken: required("BOT_TOKEN"),
+  ownerIds: idList(optional("OWNER_IDS")).filter((n) => n > 0),
+  /** 允許使用的群組 id；空陣列表示不限制 */
+  allowedChatIds: idList(optional("ALLOWED_CHAT_IDS")),
   dataFile: optional("DATA_FILE", "./data/bot.json"),
   /** 每日備份保留幾份，0 表示不備份 */
   dataBackupKeep: Math.max(0, Math.floor(Number(optional("DATA_BACKUP_KEEP", "7")) || 0)),
