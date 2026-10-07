@@ -45,6 +45,8 @@ export interface AnnounceSettings {
 
 export interface ChatData {
   title?: string;
+  /** bot 已離開或被踢出這個群組；設定保留，重新加入時自動清除 */
+  left?: boolean;
   welcome: WelcomeSettings;
   roles: Record<string, Role>;
   fixupMode: FixupMode;

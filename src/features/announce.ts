@@ -10,7 +10,10 @@ export const OFFLINE_TEXT = "暫時下線維修囉汪汪";
 
 /** 對所有開啟通知的群組發同一句話；失敗的群組只記 log，不中斷其他群組 */
 export async function broadcast(api: Api, text: string): Promise<void> {
-  const targets = store.chatIds().filter((id) => store.chat(id).announce.enabled);
+  const targets = store.chatIds().filter((id) => {
+    const c = store.chat(id);
+    return c.announce.enabled && !c.left;
+  });
   const results = await Promise.allSettled(
     targets.map((chatId) =>
       api.sendMessage(chatId, text, { message_thread_id: store.chat(chatId).announce.threadId }),
@@ -18,10 +21,17 @@ export async function broadcast(api: Api, text: string): Promise<void> {
   );
   let ok = 0;
   results.forEach((r, i) => {
-    if (r.status === "fulfilled") ok++;
-    else {
-      const title = store.chat(targets[i]).title ?? targets[i];
-      console.warn(`[${title}] 上下線通知發送失敗：`, (r.reason as Error)?.message ?? r.reason);
+    if (r.status === "fulfilled") {
+      ok++;
+      return;
+    }
+    const chat = store.chat(targets[i]);
+    const reason = (r.reason as Error)?.message ?? String(r.reason);
+    console.warn(`[${chat.title ?? targets[i]}] 上下線通知發送失敗：`, reason);
+    // 被踢出或群組不存在：記下來，之後不再嘗試
+    if (/kicked|chat not found|bot is not a member|CHAT_WRITE_FORBIDDEN/i.test(reason)) {
+      chat.left = true;
+      store.save();
     }
   });
   console.log(`上下線通知「${text}」→ ${ok}/${targets.length} 個群組`);

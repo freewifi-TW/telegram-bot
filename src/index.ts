@@ -60,6 +60,14 @@ bot.on("my_chat_member", (ctx) => {
   const { chat, new_chat_member } = ctx.myChatMember;
   const title = "title" in chat ? chat.title : chat.id;
   console.log(`群組「${title}」中的狀態變為 ${new_chat_member.status}`);
+  if (chat.type === "group" || chat.type === "supergroup") {
+    const data = store.chat(chat.id);
+    const left = new_chat_member.status === "left" || new_chat_member.status === "kicked";
+    if (data.left !== left) {
+      data.left = left;
+      store.save();
+    }
+  }
 });
 
 bot.use(welcome);
