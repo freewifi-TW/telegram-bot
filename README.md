@@ -7,7 +7,7 @@
 | 👋 歡迎詞 | 新成員加入時自動發送，內容、發送話題皆可由管理員設定 |
 | 🏷 身分組 | 管理員建立身分組，成員透過面板按鈕自行加入／退出 |
 | 📣 一鍵 tag | `/tag 身分組 訊息` 一次通知整組的人 |
-| 🔗 連結修正 | x.com / twitter.com 推文連結自動轉成 fixupx.com |
+| 🔗 連結修正 | x.com、pixiv、Bluesky、Instagram、TikTok、Reddit 連結自動轉成能正常預覽的版本 |
 | 🔍 以圖搜圖 | 回覆圖片 `/source`，查 SauceNAO（Twitter、e621）與 e621 IQDB |
 
 技術：Node.js 20、TypeScript、[grammY](https://grammy.dev/)。資料存在單一 JSON 檔，不需要資料庫。
@@ -79,9 +79,22 @@ npm start
 
 歡迎詞可用變數：`{mention}`（會通知新成員）、`{name}`、`{username}`、`{group}`，並支援 HTML 標籤如 `<b>粗體</b>`。
 
+連結修正支援的網站：
+
+| 原始 | 轉成 |
+| --- | --- |
+| x.com、twitter.com 推文 | fixupx.com |
+| pixiv.net 作品 | phixiv.net |
+| bsky.app 貼文 | fxbsky.app |
+| instagram.com 貼文、Reel | ddinstagram.com |
+| tiktok.com 影片（含 vm. / vt. 短網址） | vxtiktok.com |
+| reddit.com 貼文 | rxddit.com |
+
+要增減網站，改 `src/features/fixup.ts` 的 `RULES` 表即可。
+
 連結修正模式：
 
-- `reply`（預設）：回覆一則 fixupx.com 連結，原訊息保留。
+- `reply`（預設）：回覆一則修正後的連結，原訊息保留。
 - `replace`：刪除原訊息，由 bot 以「**作者名**：內容」重發。只對純文字訊息生效，附圖訊息仍用回覆模式。原訊息的粗體等格式會遺失。
 - `off`：關閉。
 

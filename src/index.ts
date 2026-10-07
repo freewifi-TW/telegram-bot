@@ -49,7 +49,7 @@ const HELP = [
   "回覆圖片輸入 /source，會查 SauceNAO（Twitter、e621）與 e621 IQDB",
   "",
   "🔗 <b>連結修正</b>",
-  "看到 x.com / twitter.com 推文連結會自動補上 fixupx.com 版本",
+  "看到 x.com、pixiv、Bluesky、Instagram、TikTok、Reddit 連結會自動補上能正常預覽的版本",
 ].join("\n");
 
 bot.command(["start", "help"], (ctx) => ctx.reply(HELP, { parse_mode: "HTML" }));
