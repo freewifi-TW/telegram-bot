@@ -30,3 +30,5 @@ echo "=== 容器狀態 ==="
 sudo docker ps --filter name=machinechubbybot --format "{{.Status}}"
 echo "=== 最近 log ==="
 sudo docker logs --tail 15 machinechubbybot 2>&1
+# 清掉舊的建置快取，不然每次部署都會累積
+sudo docker builder prune -f >/dev/null
