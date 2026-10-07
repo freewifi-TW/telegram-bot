@@ -8,7 +8,7 @@
 | 🏷 身分組 | 管理員建立身分組，成員透過面板按鈕自行加入／退出 |
 | 📣 一鍵 tag | `/tag 身分組 訊息` 一次通知整組的人 |
 | 🔗 連結修正 | x.com、pixiv、Bluesky、Instagram、TikTok、Reddit 連結自動轉成能正常預覽的版本 |
-| 🔍 以圖搜圖 | 回覆圖片 `/source`，查 SauceNAO（Pixiv、Danbooru、e621、FurAffinity、Twitter）與 e621 IQDB |
+| 🔍 以圖搜圖 | 回覆圖片 `/source`，查 SauceNAO（Pixiv、Danbooru、e621、FurAffinity、Twitter）、e621 IQDB 與 Fluffle（FurAffinity、Twitter、Bluesky、e621、Weasyl、DeviantArt、Inkbunny） |
 
 技術：Node.js 20、TypeScript、[grammY](https://grammy.dev/)。資料存在單一 JSON 檔，不需要資料庫。
 
@@ -55,7 +55,7 @@ npm run typecheck
 | `DATA_BACKUP_KEEP` | | 每日備份保留份數，預設 7，填 0 關閉 |
 | `SAUCENAO_API_KEY` | | 到 <https://saucenao.com/user.php?page=search-api> 免費申請，沒填也能用但額度很低 |
 | `SAUCENAO_MIN_SIMILARITY` | | 低於此相似度的結果不顯示，預設 60 |
-| `E621_USER_AGENT` | | e621 要求格式 `專案名/版本 (by 你的e621帳號)`，沒填會被拒絕 |
+| `E621_USER_AGENT` | | e621 要求格式 `專案名/版本 (by 你的e621帳號)`，沒填會被拒絕。Fluffle 查詢也用同一個 User-Agent |
 | `E621_LOGIN` / `E621_API_KEY` | | 選填，用帳號查詢可以提高額度 |
 
 ## 3. 指令一覽

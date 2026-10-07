@@ -28,6 +28,7 @@ const SAUCENAO_DBS = [
   SAUCENAO_DB_TWITTER,
 ];
 const SAUCENAO_LABEL = "SauceNAO（Pixiv / Danbooru / e621 / FurAffinity / Twitter）";
+const FLUFFLE_LABEL = "Fluffle（FurAffinity / Twitter / Bluesky / e621 / Weasyl / DeviantArt / Inkbunny）";
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 function pickImage(msg: Message | undefined): { fileId: string; name: string } | undefined {
@@ -160,6 +161,53 @@ async function searchE621(image: ArrayBuffer, filename: string): Promise<Hit[]> 
   return hits.sort((a, b) => b.similarity - a.similarity);
 }
 
+const FLUFFLE_MAX_BYTES = 4 * 1024 * 1024;
+
+interface FluffleResponse {
+  results?: Array<{
+    score: number;
+    match: "exact" | "tossUp" | "alternative" | "unlikely";
+    platform: string;
+    location: string;
+    credits?: Array<{ name: string | number }>;
+  }>;
+}
+
+/** Fluffle 的 score 是 0–1，match 為 unlikely 的直接丟掉 */
+export function parseFluffle(json: unknown): Hit[] {
+  const results = (json as FluffleResponse)?.results;
+  if (!Array.isArray(results)) return [];
+  const hits: Hit[] = [];
+  for (const r of results) {
+    if (!r || r.match === "unlikely" || typeof r.score !== "number" || !r.location) continue;
+    const credits = (r.credits ?? []).map((c) => String(c.name)).filter(Boolean);
+    hits.push({
+      similarity: Math.round(r.score * 1000) / 10,
+      source: r.platform || "Fluffle",
+      label: credits.length ? `作者 ${credits.join("、")}` : r.match === "exact" ? "完全相符" : "可能相符",
+      url: r.location,
+    });
+  }
+  return hits.sort((a, b) => b.similarity - a.similarity);
+}
+
+async function searchFluffle(image: ArrayBuffer, filename: string): Promise<Hit[]> {
+  if (image.byteLength > FLUFFLE_MAX_BYTES) throw new Error("圖片超過 4MB，Fluffle 不接受");
+  const form = new FormData();
+  form.append("file", new Blob([image]), filename);
+  form.append("limit", "8");
+  form.append("includeNsfw", "true");
+  const res = await fetch("https://api.fluffle.xyz/v1/search", {
+    method: "POST",
+    body: form,
+    headers: { "User-Agent": config.e621.userAgent },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (res.status === 429) throw new Error("Fluffle 要求太頻繁，請稍後再試");
+  if (!res.ok) throw new Error(`Fluffle 回應 HTTP ${res.status}`);
+  return parseFluffle(await res.json());
+}
+
 function formatHits(title: string, hits: Hit[]): string {
   if (hits.length === 0) return `<b>${title}</b>\n　沒有相似結果`;
   const lines = hits.slice(0, 5).map((h) => {
@@ -192,23 +240,22 @@ sauce.command(["source", "sauce", "search", "搜圖"], async (ctx) => {
     return;
   }
 
-  const [nao, e6] = await Promise.allSettled([
-    searchSauceNao(image, target.name),
-    searchE621(image, target.name),
-  ]);
+  const sources: Array<{ name: string; title: string; run: Promise<Hit[]> }> = [
+    { name: "SauceNAO", title: SAUCENAO_LABEL, run: searchSauceNao(image, target.name) },
+    { name: "e621", title: "e621 IQDB", run: searchE621(image, target.name) },
+    { name: "Fluffle", title: FLUFFLE_LABEL, run: searchFluffle(image, target.name) },
+  ];
+  const results = await Promise.allSettled(sources.map((s) => s.run));
 
   const summary = (name: string, r: PromiseSettledResult<Hit[]>) =>
     r.status === "fulfilled" ? `${name} ${r.value.length} 筆` : `${name} 失敗（${(r.reason as Error).message}）`;
-  log(ctx, `/source ${target.name} → ${summary("SauceNAO", nao)}、${summary("e621", e6)}`);
+  log(ctx, `/source ${target.name} → ${results.map((r, i) => summary(sources[i].name, r)).join("、")}`);
 
-  const sections = [
-    nao.status === "fulfilled"
-      ? formatHits(SAUCENAO_LABEL, nao.value)
-      : `<b>SauceNAO</b>\n　⚠️ ${escapeHtml((nao.reason as Error).message)}`,
-    e6.status === "fulfilled"
-      ? formatHits("e621 IQDB", e6.value)
-      : `<b>e621 IQDB</b>\n　⚠️ ${escapeHtml((e6.reason as Error).message)}`,
-  ];
+  const sections = results.map((r, i) =>
+    r.status === "fulfilled"
+      ? formatHits(sources[i].title, r.value)
+      : `<b>${sources[i].name}</b>\n　⚠️ ${escapeHtml((r.reason as Error).message)}`,
+  );
 
   await ctx.api.editMessageText(
     status.chat.id,
