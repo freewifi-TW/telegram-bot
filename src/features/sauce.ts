@@ -138,7 +138,7 @@ function formatHits(title: string, hits: Hit[]): string {
   return `<b>${title}</b>\n${lines.join("\n")}`;
 }
 
-sauce.command(["sauce", "search", "搜圖"], async (ctx) => {
+sauce.command(["sauce", "source", "search", "搜圖"], async (ctx) => {
   const msg = ctx.msg;
   const target = pickImage(msg) ?? pickImage(msg.reply_to_message);
   if (!target) {

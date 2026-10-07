@@ -44,17 +44,12 @@ const HELP = [
   "/role_list — 所有身分組與人數",
   "/role_members 名稱 — 某身分組有誰",
   "/tag 名稱 [訊息] — 一次通知整個身分組",
-  "/role_add 名稱 [說明]、/role_del 名稱 — 管理員新增／刪除",
   "",
-  "👋 <b>歡迎詞</b>",
-  "/welcome — 查看設定與用法（管理員可用 /setwelcome 修改）",
+  "🔍 <b>以圖搜圖</b>",
+  "回覆圖片輸入 /source，會查 SauceNAO（Twitter、e621）與 e621 IQDB",
   "",
   "🔗 <b>連結修正</b>",
   "看到 x.com / twitter.com 推文連結會自動補上 fixupx.com 版本",
-  "/fixup reply | replace | off — 管理員切換模式",
-  "",
-  "🔍 <b>以圖搜圖</b>",
-  "回覆圖片輸入 /sauce，會查 SauceNAO（Twitter、e621）與 e621 IQDB",
 ].join("\n");
 
 bot.command(["start", "help"], (ctx) => ctx.reply(HELP, { parse_mode: "HTML" }));
