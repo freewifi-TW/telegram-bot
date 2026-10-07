@@ -21,6 +21,8 @@ export const config = {
     .map((s) => Number(s.trim()))
     .filter((n) => Number.isInteger(n) && n > 0),
   dataFile: optional("DATA_FILE", "./data/bot.json"),
+  /** 每日備份保留幾份，0 表示不備份 */
+  dataBackupKeep: Math.max(0, Math.floor(Number(optional("DATA_BACKUP_KEEP", "7")) || 0)),
   sauceNao: {
     apiKey: optional("SAUCENAO_API_KEY"),
     minSimilarity: Number(optional("SAUCENAO_MIN_SIMILARITY", "60")),

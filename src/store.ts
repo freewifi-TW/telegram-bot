@@ -1,5 +1,14 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, extname, join } from "node:path";
 import { config } from "./config.js";
 
 export interface UserInfo {
@@ -50,13 +59,67 @@ function defaultChat(): ChatData {
   };
 }
 
-class Store {
+function localDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+export class Store {
   private data: Data = { chats: {}, users: {} };
   private timer: NodeJS.Timeout | null = null;
   private dirty = false;
 
-  constructor(private readonly path: string) {
+  /**
+   * @param path 資料檔路徑
+   * @param backupKeep 每日備份保留份數，0 表示不備份
+   * @param clock 取得現在時間，測試用
+   */
+  constructor(
+    private readonly path: string,
+    private readonly backupKeep = 0,
+    private readonly clock: () => Date = () => new Date(),
+  ) {
     this.load();
+    this.backupIfNeeded();
+  }
+
+  /** 備份目錄：資料檔旁邊的 backups/ */
+  get backupDir(): string {
+    return join(dirname(this.path), "backups");
+  }
+
+  private get backupBase(): string {
+    return basename(this.path, extname(this.path));
+  }
+
+  /** 列出現有備份檔名，新的在前 */
+  listBackups(): string[] {
+    if (!existsSync(this.backupDir)) return [];
+    const re = new RegExp(`^${this.backupBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-\\d{4}-\\d{2}-\\d{2}\\.json$`);
+    return readdirSync(this.backupDir)
+      .filter((f) => re.test(f))
+      .sort()
+      .reverse();
+  }
+
+  /**
+   * 每天第一次寫檔前，把目前磁碟上的資料檔複製一份到 backups/，
+   * 檔名帶日期，超過保留份數的舊備份會刪掉。
+   */
+  backupIfNeeded() {
+    if (this.backupKeep <= 0 || !existsSync(this.path)) return;
+    const name = `${this.backupBase}-${localDate(this.clock())}.json`;
+    const target = join(this.backupDir, name);
+    if (existsSync(target)) return;
+    try {
+      mkdirSync(this.backupDir, { recursive: true });
+      copyFileSync(this.path, target);
+      for (const old of this.listBackups().slice(this.backupKeep)) {
+        unlinkSync(join(this.backupDir, old));
+      }
+    } catch (err) {
+      console.error("備份資料檔失敗：", err);
+    }
   }
 
   private load() {
@@ -122,6 +185,7 @@ class Store {
       clearTimeout(this.timer);
       this.timer = null;
     }
+    this.backupIfNeeded();
     try {
       mkdirSync(dirname(this.path), { recursive: true });
       const tmp = `${this.path}.tmp`;
@@ -134,7 +198,7 @@ class Store {
   }
 }
 
-export const store = new Store(config.dataFile);
+export const store = new Store(config.dataFile, config.dataBackupKeep);
 
 export function findRole(chat: ChatData, name: string): Role | undefined {
   const needle = name.trim().toLowerCase();

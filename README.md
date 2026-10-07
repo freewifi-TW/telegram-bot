@@ -38,6 +38,13 @@ npm run build
 npm start
 ```
 
+測試與型別檢查：
+
+```bash
+npm test             # node:test，測試檔為 src/**/*.test.ts
+npm run typecheck
+```
+
 ### 環境變數
 
 | 變數 | 必填 | 說明 |
@@ -45,6 +52,7 @@ npm start
 | `BOT_TOKEN` | ✅ | BotFather 給的 token |
 | `OWNER_IDS` | | 你的 user id，逗號分隔。填了之後不管群組權限都視為管理員 |
 | `DATA_FILE` | | 資料檔路徑，預設 `./data/bot.json` |
+| `DATA_BACKUP_KEEP` | | 每日備份保留份數，預設 7，填 0 關閉 |
 | `SAUCENAO_API_KEY` | | 到 <https://saucenao.com/user.php?page=search-api> 免費申請，沒填也能用但額度很低 |
 | `SAUCENAO_MIN_SIMILARITY` | | 低於此相似度的結果不顯示，預設 60 |
 | `E621_USER_AGENT` | | e621 要求格式 `專案名/版本 (by 你的e621帳號)`，沒填會被拒絕 |
@@ -120,6 +128,8 @@ bot 使用 long polling，不需要公開網址或 webhook。
 ## 5. 資料檔
 
 所有設定與身分組都在 `data/bot.json`，結構很單純，可以直接用編輯器查看或備份。bot 會先寫暫存檔再改名，不會因為中途當機留下半截檔案。
+
+每天第一次寫檔前會把前一版複製到 `data/backups/bot-YYYY-MM-DD.json`，預設保留 7 份，由 `DATA_BACKUP_KEEP` 控制。要還原就把某份備份複製回 `data/bot.json` 再重啟。
 
 ## 已知限制
 
