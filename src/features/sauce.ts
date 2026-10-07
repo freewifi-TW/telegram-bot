@@ -203,6 +203,7 @@ async function searchFluffle(image: ArrayBuffer, filename: string): Promise<Hit[
     headers: { "User-Agent": config.e621.userAgent },
     signal: AbortSignal.timeout(30_000),
   });
+  if (res.status === 415) throw new Error("Fluffle 只接受 JPEG、PNG、WebP、GIF");
   if (res.status === 429) throw new Error("Fluffle 要求太頻繁，請稍後再試");
   if (!res.ok) throw new Error(`Fluffle 回應 HTTP ${res.status}`);
   return parseFluffle(await res.json());
