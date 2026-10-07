@@ -228,10 +228,25 @@ roles.command(
     }
     delete chat.roles[role.id];
     store.save();
-    log(ctx, `/role_del 刪除「${role.name}」（原本 ${memberCount(role)} 人）`);
-    await ctx.reply(`🗑 已刪除身分組「${role.name}」（原本 ${memberCount(role)} 人）。`);
-    // 被刪掉的身分組要從成員標籤上拿掉
-    await syncMemberTags(ctx, chat, Object.values(role.members).map((m) => m.id));
+    const members = Object.values(role.members).map((m) => m.id);
+    log(ctx, `/role_del 刪除「${role.name}」（原本 ${members.length} 人）`);
+    await ctx.reply(
+      `🗑 已刪除身分組「${role.name}」（原本 ${members.length} 人）。` +
+        (members.length ? "\n正在把它從成員標籤上拿掉，完成後會再通知。" : ""),
+    );
+    if (members.length === 0) return;
+    // 被刪掉的身分組要從成員標籤上拿掉；人多會被限速，放到背景慢慢跑
+    void (async () => {
+      try {
+        const count = await syncMemberTags(ctx, chat, members, SYNC_PACE_MS);
+        log(ctx, `/role_del「${role.name}」標籤更新 成功 ${count.ok}、跳過 ${count.skipped}、失敗 ${count.failed}`);
+        const lines = [`🏷 已從 ${count.ok} 人的成員標籤移除「${role.name}」。`];
+        if (count.failed) lines.push(`失敗 ${count.failed} 人，可以用 /role_sync_tags 補上。`);
+        await ctx.reply(lines.join("\n"));
+      } catch (err) {
+        warn(ctx, `/role_del「${role.name}」標籤更新中斷`, err);
+      }
+    })();
   }),
 );
 
