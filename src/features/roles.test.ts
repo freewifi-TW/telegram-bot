@@ -2,7 +2,25 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import "../test-setup.js";
 import { findRole, type ChatData } from "../store.js";
-import { chunk, parseArgs, parseRoleCall } from "./roles.js";
+import { chunk, parseArgs, parseRoleCall, sortedRoles } from "./roles.js";
+
+describe("sortedRoles", () => {
+  it("依新增順序，不受名稱影響", () => {
+    const chat: ChatData = {
+      welcome: { enabled: true, text: "" },
+      fixupMode: "reply",
+      roles: {
+        c: { id: "c", name: "A最後建", createdAt: 300, members: {} },
+        a: { id: "a", name: "Z最先建", createdAt: 100, members: {} },
+        b: { id: "b", name: "M中間建", createdAt: 200, members: {} },
+      },
+    };
+    assert.deepEqual(
+      sortedRoles(chat).map((r) => r.id),
+      ["a", "b", "c"],
+    );
+  });
+});
 
 describe("parseArgs", () => {
   it("第一個字是名稱，其餘是訊息", () => {

@@ -14,8 +14,11 @@ const TAG_COOLDOWN_MS = 30_000;
 
 const tagCooldown = new Map<string, number>();
 
-function sortedRoles(chat: ChatData): Role[] {
-  return Object.values(chat.roles).sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"));
+/** 依新增順序排列（createdAt 相同時再比名稱，確保順序穩定） */
+export function sortedRoles(chat: ChatData): Role[] {
+  return Object.values(chat.roles).sort(
+    (a, b) => a.createdAt - b.createdAt || a.name.localeCompare(b.name, "zh-Hant"),
+  );
 }
 
 function memberCount(role: Role): number {
