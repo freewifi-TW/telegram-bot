@@ -1,6 +1,6 @@
-import { Composer, GrammyError, InlineKeyboard } from "grammy";
+import { Composer, GrammyError, InlineKeyboard, type Context } from "grammy";
 import { findRole, newRoleId, store, type ChatData, type Role, type UserInfo } from "../store.js";
-import { adminOnly, groupOnly, isAdmin } from "../util/admin.js";
+import { adminOnly, groupOnly, isAdmin, isGroup } from "../util/admin.js";
 import { escapeHtml, mentionHtml, toUserInfo } from "../util/html.js";
 
 export const roles = new Composer();
@@ -49,10 +49,27 @@ function panelKeyboard(chat: ChatData): InlineKeyboard {
   return kb;
 }
 
-function parseArgs(match: unknown): { name: string; rest: string } {
+export function parseArgs(match: unknown): { name: string; rest: string } {
   const text = String(match ?? "").trim();
   const [name = "", ...rest] = text.split(/\s+/);
   return { name, rest: rest.join(" ") };
+}
+
+/**
+ * 訊息開頭是「@身分組名稱」時視為呼叫，等同 /tag 名稱 訊息。
+ * 只認開頭，避免句子中間提到 @某人 時誤觸。
+ */
+export function parseRoleCall(text: string): { name: string; rest: string } | undefined {
+  const m = /^@(\S+)(?:\s+([\s\S]*))?$/.exec(text.trim());
+  if (!m) return undefined;
+  return { name: m[1], rest: (m[2] ?? "").trim() };
+}
+
+/** 把成員切成每則訊息最多 size 人 */
+export function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
 }
 
 roles.command(
@@ -175,48 +192,63 @@ roles.command(
   }),
 );
 
+/** /tag 與「@身分組」共用的通知流程 */
+async function tagRole(ctx: Context, role: Role, message: string): Promise<void> {
+  if (!ctx.from || !ctx.chat) return;
+  const chatId = ctx.chat.id;
+
+  const cooldownKey = `${chatId}:${role.id}`;
+  const last = tagCooldown.get(cooldownKey) ?? 0;
+  if (Date.now() - last < TAG_COOLDOWN_MS && !(await isAdmin(ctx))) {
+    const wait = Math.ceil((TAG_COOLDOWN_MS - (Date.now() - last)) / 1000);
+    await ctx.reply(`「${role.name}」剛剛才被 tag 過，請 ${wait} 秒後再試。`);
+    return;
+  }
+
+  const members: UserInfo[] = Object.values(role.members).map((m) => store.user(m.id) ?? m);
+  if (members.length === 0) {
+    await ctx.reply(`「${role.name}」目前還沒有人。`);
+    return;
+  }
+  tagCooldown.set(cooldownKey, Date.now());
+
+  const header =
+    `📣 ${mentionHtml(ctx.from)} 呼叫 <b>#${escapeHtml(role.name)}</b>` +
+    (message ? `：${escapeHtml(message)}` : "");
+
+  const chunks = chunk(members.map(mentionHtml), MENTIONS_PER_MESSAGE);
+  for (let i = 0; i < chunks.length; i++) {
+    const body = chunks[i].join(" ");
+    await ctx.reply(i === 0 ? `${header}\n${body}` : body, { parse_mode: "HTML" });
+  }
+}
+
 roles.command(
   "tag",
   groupOnly(async (ctx) => {
-    if (!ctx.from) return;
-    const chatId = ctx.chat!.id;
-    const chat = store.chat(chatId);
+    const chat = store.chat(ctx.chat!.id);
     const { name, rest: message } = parseArgs(ctx.match);
     const role = name ? findRole(chat, name) : undefined;
     if (!role) {
       await ctx.reply("用法：/tag 身分組名稱 [要說的話]\n用 /role_list 看看有哪些身分組。");
       return;
     }
-
-    const cooldownKey = `${chatId}:${role.id}`;
-    const last = tagCooldown.get(cooldownKey) ?? 0;
-    if (Date.now() - last < TAG_COOLDOWN_MS && !(await isAdmin(ctx))) {
-      const wait = Math.ceil((TAG_COOLDOWN_MS - (Date.now() - last)) / 1000);
-      await ctx.reply(`「${role.name}」剛剛才被 tag 過，請 ${wait} 秒後再試。`);
-      return;
-    }
-
-    const members: UserInfo[] = Object.values(role.members).map((m) => store.user(m.id) ?? m);
-    if (members.length === 0) {
-      await ctx.reply(`「${role.name}」目前還沒有人。`);
-      return;
-    }
-    tagCooldown.set(cooldownKey, Date.now());
-
-    const header =
-      `📣 ${mentionHtml(ctx.from)} 呼叫 <b>#${escapeHtml(role.name)}</b>` +
-      (message ? `：${escapeHtml(message)}` : "");
-
-    const chunks: string[][] = [];
-    for (let i = 0; i < members.length; i += MENTIONS_PER_MESSAGE) {
-      chunks.push(members.slice(i, i + MENTIONS_PER_MESSAGE).map(mentionHtml));
-    }
-    for (let i = 0; i < chunks.length; i++) {
-      const body = chunks[i].join(" ");
-      await ctx.reply(i === 0 ? `${header}\n${body}` : body, { parse_mode: "HTML" });
-    }
+    await tagRole(ctx, role, message);
   }),
 );
+
+// 訊息開頭打「@身分組名稱」也能呼叫；名稱對不上就當一般訊息放行
+roles.on("message:text", async (ctx, next) => {
+  if (isGroup(ctx) && !ctx.from?.is_bot) {
+    const call = parseRoleCall(ctx.msg.text);
+    const role = call ? findRole(store.chat(ctx.chat.id), call.name) : undefined;
+    if (role) {
+      await tagRole(ctx, role, call!.rest);
+      return;
+    }
+  }
+  await next();
+});
 
 roles.callbackQuery(/^r:([a-z0-9]+)$/, async (ctx) => {
   const chatId = ctx.chat?.id;

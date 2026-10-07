@@ -43,7 +43,7 @@ const HELP = [
   "/my_roles — 看自己有哪些身分組",
   "/role_list — 所有身分組與人數",
   "/role_members 名稱 — 某身分組有誰",
-  "/tag 名稱 [訊息] — 一次通知整個身分組",
+  "/tag 名稱 [訊息] — 一次通知整個身分組，訊息開頭打 @名稱 也可以",
   "",
   "🔍 <b>以圖搜圖</b>",
   "回覆圖片輸入 /source，會查 SauceNAO（Twitter、e621）與 e621 IQDB",
