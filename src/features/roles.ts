@@ -2,6 +2,7 @@ import { Composer, GrammyError, InlineKeyboard, type Context } from "grammy";
 import { findRole, newRoleId, store, type ChatData, type Role, type UserInfo } from "../store.js";
 import { adminOnly, groupOnly, isAdmin, isGroup } from "../util/admin.js";
 import { escapeHtml, mentionHtml, toUserInfo } from "../util/html.js";
+import { log, warn } from "../util/log.js";
 
 export const roles = new Composer();
 
@@ -102,6 +103,7 @@ roles.command(
       members: {},
     };
     store.save();
+    log(ctx, `/role_add 新增「${name}」`);
     await ctx.reply(`✅ 已新增身分組「${name}」。用 /roles 叫出面板讓大家加入。`);
   }),
 );
@@ -118,6 +120,7 @@ roles.command(
     }
     delete chat.roles[role.id];
     store.save();
+    log(ctx, `/role_del 刪除「${role.name}」（原本 ${memberCount(role)} 人）`);
     await ctx.reply(`🗑 已刪除身分組「${role.name}」（原本 ${memberCount(role)} 人）。`);
   }),
 );
@@ -221,6 +224,7 @@ async function tagRole(ctx: Context, role: Role, message: string): Promise<void>
     const body = chunks[i].join(" ");
     await ctx.reply(i === 0 ? `${header}\n${body}` : body, { parse_mode: "HTML" });
   }
+  log(ctx, `tag「${role.name}」→ 通知 ${members.length} 人，分 ${chunks.length} 則${message ? `：${message}` : ""}`);
 }
 
 roles.command(
@@ -269,9 +273,11 @@ roles.callbackQuery(/^r:([a-z0-9]+)$/, async (ctx) => {
   if (role.members[key]) {
     delete role.members[key];
     text = `👋 已退出「${role.name}」`;
+    log(ctx, `退出「${role.name}」（現 ${memberCount(role)} 人）`);
   } else {
     role.members[key] = { ...toUserInfo(user), lastSeen: Date.now() };
     text = `✅ 已加入「${role.name}」`;
+    log(ctx, `加入「${role.name}」（現 ${memberCount(role)} 人）`);
   }
   store.save();
   await ctx.answerCallbackQuery({ text });
@@ -284,7 +290,7 @@ roles.callbackQuery(/^r:([a-z0-9]+)$/, async (ctx) => {
   } catch (err) {
     // 內容沒變（例如同時有人按）會丟 "message is not modified"，可以忽略
     if (!(err instanceof GrammyError && err.description.includes("not modified"))) {
-      console.warn("更新身分組面板失敗：", err);
+      warn(ctx, "更新身分組面板失敗", err);
     }
   }
 });

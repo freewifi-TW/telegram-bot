@@ -3,6 +3,7 @@ import type { Message, MessageEntity } from "grammy/types";
 import { store, type FixupMode } from "../store.js";
 import { adminOnly } from "../util/admin.js";
 import { displayName, escapeHtml } from "../util/html.js";
+import { log, warn } from "../util/log.js";
 
 export const fixup = new Composer();
 
@@ -117,9 +118,10 @@ async function handleMessage(ctx: Context): Promise<void> {
         parse_mode: "HTML",
         reply_parameters: replyTarget(msg),
       });
+      log(ctx, `fixup（replace）${links.join(" ")}`);
       return;
     } catch (err) {
-      console.warn("刪除重發失敗，改用回覆模式：", err);
+      warn(ctx, "刪除重發失敗，改用回覆模式", err);
     }
   }
 
@@ -127,6 +129,7 @@ async function handleMessage(ctx: Context): Promise<void> {
     reply_parameters: { message_id: msg.message_id },
     link_preview_options: { url: links[0] },
   });
+  log(ctx, `fixup（reply）${links.join(" ")}`);
 }
 
 fixup.command(

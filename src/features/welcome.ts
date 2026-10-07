@@ -3,6 +3,7 @@ import type { ChatMember, User } from "grammy/types";
 import { DEFAULT_WELCOME, store } from "../store.js";
 import { adminOnly, groupOnly } from "../util/admin.js";
 import { displayName, escapeHtml, mentionHtml } from "../util/html.js";
+import { log, warn } from "../util/log.js";
 
 export const welcome = new Composer();
 
@@ -55,6 +56,7 @@ async function sendWelcome(ctx: Context, user: User): Promise<void> {
 
   const title = ("title" in chat && chat.title) || data.title || "本群";
   const base = { message_thread_id: data.welcome.threadId };
+  const target = data.welcome.threadId ? `話題 #${data.welcome.threadId}` : "General";
   try {
     await ctx.api.sendMessage(chat.id, renderWelcome(data.welcome.text, user, title, true), {
       ...base,
@@ -62,9 +64,10 @@ async function sendWelcome(ctx: Context, user: User): Promise<void> {
     });
   } catch (err) {
     // 多半是管理員設定的歡迎詞含有不合法的 HTML，退回純文字
-    console.warn("HTML 歡迎詞發送失敗，改用純文字：", err);
+    warn(ctx, "HTML 歡迎詞發送失敗，改用純文字", err);
     await ctx.api.sendMessage(chat.id, renderWelcome(data.welcome.text, user, title, false), base);
   }
+  log(ctx, `歡迎 ${user.username ? `@${user.username}` : displayName(user)} → ${target}`);
 }
 
 // 方式一：bot 為管理員時會收到 chat_member 更新（最可靠，連隱藏加入訊息時也有效）

@@ -1,5 +1,6 @@
 import type { Context, MiddlewareFn } from "grammy";
 import { config } from "../config.js";
+import { warn } from "./log.js";
 
 const cache = new Map<string, { admin: boolean; expires: number }>();
 const TTL = 60_000;
@@ -22,7 +23,7 @@ export async function isAdmin(ctx: Context): Promise<boolean> {
     const member = await ctx.getChatMember(userId);
     admin = member.status === "creator" || member.status === "administrator";
   } catch (err) {
-    console.warn("查詢管理員身分失敗：", err);
+    warn(ctx, "查詢管理員身分失敗", err);
   }
   cache.set(key, { admin, expires: Date.now() + TTL });
   return admin;

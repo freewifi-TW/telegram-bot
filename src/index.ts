@@ -7,17 +7,18 @@ import { sauce } from "./features/sauce.js";
 import { welcome } from "./features/welcome.js";
 import { store } from "./store.js";
 import { toUserInfo } from "./util/html.js";
+import { where } from "./util/log.js";
 
 const bot = new Bot(config.botToken);
 
 bot.catch(({ error, ctx }) => {
-  const where = `update ${ctx.update.update_id}`;
+  const prefix = `${where(ctx)} update ${ctx.update.update_id}`;
   if (error instanceof GrammyError) {
-    console.error(`[${where}] Telegram API 錯誤：`, error.description);
+    console.error(`${prefix} Telegram API 錯誤：`, error.description);
   } else if (error instanceof HttpError) {
-    console.error(`[${where}] 無法連線到 Telegram：`, error);
+    console.error(`${prefix} 無法連線到 Telegram：`, error);
   } else {
-    console.error(`[${where}] 未預期的錯誤：`, error);
+    console.error(`${prefix} 未預期的錯誤：`, error);
   }
 });
 

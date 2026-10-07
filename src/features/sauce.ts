@@ -2,6 +2,7 @@ import { Composer, type Context } from "grammy";
 import type { Message } from "grammy/types";
 import { config } from "../config.js";
 import { escapeHtml } from "../util/html.js";
+import { log, warn } from "../util/log.js";
 
 export const sauce = new Composer();
 
@@ -166,6 +167,7 @@ sauce.command(["source", "sauce", "search", "搜圖"], async (ctx) => {
   try {
     image = await downloadTelegramFile(ctx, target.fileId);
   } catch (err) {
+    warn(ctx, "/source 下載圖片失敗", err);
     await ctx.api.editMessageText(status.chat.id, status.message_id, `❌ ${(err as Error).message}`);
     return;
   }
@@ -174,6 +176,10 @@ sauce.command(["source", "sauce", "search", "搜圖"], async (ctx) => {
     searchSauceNao(image, target.name),
     searchE621(image, target.name),
   ]);
+
+  const summary = (name: string, r: PromiseSettledResult<Hit[]>) =>
+    r.status === "fulfilled" ? `${name} ${r.value.length} 筆` : `${name} 失敗（${(r.reason as Error).message}）`;
+  log(ctx, `/source ${target.name} → ${summary("SauceNAO", nao)}、${summary("e621", e6)}`);
 
   const sections = [
     nao.status === "fulfilled"
