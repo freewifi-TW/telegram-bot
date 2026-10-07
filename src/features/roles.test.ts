@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import "../test-setup.js";
 import { findRole, type ChatData } from "../store.js";
-import { chunk, parseArgs, parseRoleCall, sortedRoles } from "./roles.js";
+import { buildMemberTag, chunk, parseArgs, parseRoleCall, rolesOfUser, sortedRoles } from "./roles.js";
 
 describe("sortedRoles", () => {
   it("依新增順序，不受名稱影響", () => {
@@ -79,5 +79,50 @@ describe("findRole", () => {
   });
   it("找不到回 undefined", () => {
     assert.equal(findRole(chat, "電影"), undefined);
+  });
+});
+
+describe("rolesOfUser", () => {
+  it("依該成員加入的先後排序，與身分組新增順序無關", () => {
+    const chat: ChatData = {
+      welcome: { enabled: true, text: "" },
+      fixupMode: "reply", announce: { enabled: true },
+      roles: {
+        a: { id: "a", name: "最早建", createdAt: 100, members: { "1": { id: 1, firstName: "x", lastSeen: 0, joinedAt: 300 } } },
+        b: { id: "b", name: "後來建", createdAt: 200, members: { "1": { id: 1, firstName: "x", lastSeen: 0, joinedAt: 100 } } },
+        c: { id: "c", name: "沒加入", createdAt: 300, members: {} },
+      },
+    };
+    assert.deepEqual(rolesOfUser(chat, 1).map((r) => r.id), ["b", "a"]);
+  });
+  it("舊資料沒有 joinedAt 時用 lastSeen 當加入時間", () => {
+    const chat: ChatData = {
+      welcome: { enabled: true, text: "" },
+      fixupMode: "reply", announce: { enabled: true },
+      roles: {
+        a: { id: "a", name: "A", createdAt: 100, members: { "1": { id: 1, firstName: "x", lastSeen: 500 } } },
+        b: { id: "b", name: "B", createdAt: 200, members: { "1": { id: 1, firstName: "x", lastSeen: 400 } } },
+      },
+    };
+    assert.deepEqual(rolesOfUser(chat, 1).map((r) => r.id), ["b", "a"]);
+  });
+});
+
+describe("buildMemberTag", () => {
+  it("依序用 / 串起來", () => {
+    assert.equal(buildMemberTag(["桌遊", "電影"]), "桌遊/電影");
+  });
+  it("塞不下的後面省略", () => {
+    assert.equal(buildMemberTag(["桌遊", "2026獸無限", "民宿團", "電影"]), "桌遊/2026獸無限/民宿團");
+  });
+  it("第一個就超過上限時截斷", () => {
+    assert.equal(buildMemberTag(["abcdefghijklmnopqrstuvwxyz"]), "abcdefghijklmnop");
+  });
+  it("去掉 emoji", () => {
+    assert.equal(buildMemberTag(["🎲桌遊", "電影🎬"]), "桌遊/電影");
+    assert.equal(buildMemberTag(["👍🏽"]), "");
+  });
+  it("沒有身分組回空字串", () => {
+    assert.equal(buildMemberTag([]), "");
   });
 });

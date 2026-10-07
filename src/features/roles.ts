@@ -1,5 +1,13 @@
 import { Composer, GrammyError, InlineKeyboard, type Context } from "grammy";
-import { findRole, newRoleId, store, type ChatData, type Role, type UserInfo } from "../store.js";
+import {
+  findRole,
+  newRoleId,
+  store,
+  type ChatData,
+  type Role,
+  type RoleMember,
+  type UserInfo,
+} from "../store.js";
 import { adminOnly, groupOnly, isAdmin, isGroup } from "../util/admin.js";
 import { escapeHtml, mentionHtml, toUserInfo } from "../util/html.js";
 import { log, warn } from "../util/log.js";
@@ -8,6 +16,9 @@ export const roles = new Composer();
 
 const MAX_ROLES = 60;
 const MAX_NAME_LENGTH = 24;
+/** Telegram 成員標籤的上限（setChatMemberTag：0-16 字元，不能有 emoji） */
+export const MAX_TAG_LENGTH = 16;
+const TAG_SEPARATOR = "/";
 /** 每則訊息最多 tag 幾個人；Telegram 對單則訊息的通知數量有限制，分批比較保險 */
 const MENTIONS_PER_MESSAGE = 5;
 const TAG_COOLDOWN_MS = 30_000;
@@ -76,6 +87,89 @@ export function chunk<T>(items: T[], size: number): T[][] {
   return out;
 }
 
+function joinedAt(member: RoleMember): number {
+  return member.joinedAt ?? member.lastSeen;
+}
+
+/** 某人所在的身分組，依他點擊加入的先後排序（同時加入時再比身分組新增順序） */
+export function rolesOfUser(chat: ChatData, userId: number): Role[] {
+  const key = String(userId);
+  return Object.values(chat.roles)
+    .filter((r) => r.members[key])
+    .sort(
+      (a, b) =>
+        joinedAt(a.members[key]) - joinedAt(b.members[key]) || a.createdAt - b.createdAt,
+    );
+}
+
+/** Telegram 標籤不接受 emoji，連同膚色修飾、變體選擇符、零寬連接符一起拿掉 */
+export function stripEmoji(text: string): string {
+  return text.replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}\uFE0F\u200D\u20E3]/gu, "").trim();
+}
+
+/** 以字元為單位截斷到 max 個 UTF-16 code unit，不會切在代理對中間 */
+function truncate(text: string, max: number): string {
+  let out = "";
+  for (const ch of text) {
+    if (out.length + ch.length > max) break;
+    out += ch;
+  }
+  return out;
+}
+
+/**
+ * 把身分組名稱串成 Telegram 成員標籤：依序用「/」接起來，塞不下的就省略；
+ * 連第一個都塞不下時截斷第一個。沒有身分組回空字串（＝清除標籤）。
+ */
+export function buildMemberTag(names: string[]): string {
+  let tag = "";
+  for (const raw of names) {
+    const name = stripEmoji(raw);
+    if (!name) continue;
+    const next = tag ? `${tag}${TAG_SEPARATOR}${name}` : name;
+    if (next.length > MAX_TAG_LENGTH) {
+      if (!tag) tag = truncate(name, MAX_TAG_LENGTH);
+      break;
+    }
+    tag = next;
+  }
+  return tag;
+}
+
+type TagSyncResult = "ok" | "skipped" | "failed";
+
+/**
+ * 把某人目前的身分組寫到 Telegram 成員標籤。
+ * 標籤只能設給一般成員：管理員、已離開的人會跳過；bot 沒有「管理標籤」權限時會失敗，記錄後不影響身分組功能。
+ */
+async function syncMemberTag(ctx: Context, chat: ChatData, userId: number): Promise<TagSyncResult> {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return "skipped";
+  const tag = buildMemberTag(rolesOfUser(chat, userId).map((r) => r.name));
+  try {
+    const member = await ctx.api.getChatMember(chatId, userId);
+    if (member.status !== "member" && member.status !== "restricted") return "skipped";
+    if ((member.tag ?? "") === tag) return "ok";
+    await ctx.api.setChatMemberTag(chatId, userId, tag);
+    log(ctx, `成員標籤 user ${userId} → ${tag ? `「${tag}」` : "（清除）"}`);
+    return "ok";
+  } catch (err) {
+    warn(ctx, `更新成員標籤失敗（user ${userId}）`, err);
+    return "failed";
+  }
+}
+
+/** 依序更新多個人的標籤，回傳各結果的數量 */
+async function syncMemberTags(
+  ctx: Context,
+  chat: ChatData,
+  userIds: Iterable<number>,
+): Promise<Record<TagSyncResult, number>> {
+  const count: Record<TagSyncResult, number> = { ok: 0, skipped: 0, failed: 0 };
+  for (const id of userIds) count[await syncMemberTag(ctx, chat, id)]++;
+  return count;
+}
+
 roles.command(
   "role_add",
   adminOnly(async (ctx) => {
@@ -107,7 +201,11 @@ roles.command(
     };
     store.save();
     log(ctx, `/role_add 新增「${name}」`);
-    await ctx.reply(`✅ 已新增身分組「${name}」。用 /roles 叫出面板讓大家加入。`);
+    const tagHint =
+      stripEmoji(name).length > MAX_TAG_LENGTH
+        ? `\n⚠️ 名稱超過 ${MAX_TAG_LENGTH} 個字，顯示在成員標籤時會被截斷。`
+        : "";
+    await ctx.reply(`✅ 已新增身分組「${name}」。用 /roles 叫出面板讓大家加入。${tagHint}`);
   }),
 );
 
@@ -125,6 +223,31 @@ roles.command(
     store.save();
     log(ctx, `/role_del 刪除「${role.name}」（原本 ${memberCount(role)} 人）`);
     await ctx.reply(`🗑 已刪除身分組「${role.name}」（原本 ${memberCount(role)} 人）。`);
+    // 被刪掉的身分組要從成員標籤上拿掉
+    await syncMemberTags(ctx, chat, Object.values(role.members).map((m) => m.id));
+  }),
+);
+
+roles.command(
+  "role_sync_tags",
+  adminOnly(async (ctx) => {
+    const chat = store.chat(ctx.chat!.id);
+    const userIds = new Set<number>();
+    for (const role of Object.values(chat.roles)) {
+      for (const m of Object.values(role.members)) userIds.add(m.id);
+    }
+    if (userIds.size === 0) {
+      await ctx.reply("目前沒有任何人加入身分組，不用同步。");
+      return;
+    }
+    const count = await syncMemberTags(ctx, chat, userIds);
+    log(ctx, `/role_sync_tags 成功 ${count.ok}、跳過 ${count.skipped}、失敗 ${count.failed}`);
+    const lines = [`🏷 成員標籤同步完成：${count.ok} 人已更新。`];
+    if (count.skipped) lines.push(`跳過 ${count.skipped} 人（管理員或已不在群組裡，標籤只能設給一般成員）。`);
+    if (count.failed) {
+      lines.push(`失敗 ${count.failed} 人，請確認 bot 是管理員且有「管理標籤」權限，再執行一次。`);
+    }
+    await ctx.reply(lines.join("\n"));
   }),
 );
 
@@ -278,12 +401,14 @@ roles.callbackQuery(/^r:([a-z0-9]+)$/, async (ctx) => {
     text = `👋 已退出「${role.name}」`;
     log(ctx, `退出「${role.name}」（現 ${memberCount(role)} 人）`);
   } else {
-    role.members[key] = { ...toUserInfo(user), lastSeen: Date.now() };
+    const now = Date.now();
+    role.members[key] = { ...toUserInfo(user), lastSeen: now, joinedAt: now };
     text = `✅ 已加入「${role.name}」`;
     log(ctx, `加入「${role.name}」（現 ${memberCount(role)} 人）`);
   }
   store.save();
   await ctx.answerCallbackQuery({ text });
+  await syncMemberTag(ctx, chat, user.id);
 
   try {
     await ctx.editMessageText(panelText(chat), {

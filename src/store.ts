@@ -18,13 +18,18 @@ export interface UserInfo {
   lastSeen: number;
 }
 
+export interface RoleMember extends UserInfo {
+  /** 加入這個身分組的時間；舊資料沒有這個欄位，以 lastSeen 代替（舊版加入時只寫 lastSeen） */
+  joinedAt?: number;
+}
+
 export interface Role {
   id: string;
   name: string;
   description?: string;
   createdAt: number;
   /** key 為 user id 字串 */
-  members: Record<string, UserInfo>;
+  members: Record<string, RoleMember>;
 }
 
 export interface WelcomeSettings {
