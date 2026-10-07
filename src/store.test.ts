@@ -36,6 +36,14 @@ describe("Store 讀寫", () => {
     const chat = s.chat(-1);
     assert.equal(chat.welcome.enabled, true);
     assert.equal(chat.fixupMode, "reply");
+    assert.deepEqual(chat.announce, { enabled: true });
+  });
+
+  it("chatIds 列出所有看過的群組", () => {
+    const s = new Store(tempFile());
+    s.chat(-1);
+    s.chat(-2);
+    assert.deepEqual(s.chatIds().sort((a, b) => a - b), [-2, -1]);
   });
 
   it("資料檔壞掉時以空白資料啟動而不是崩潰", () => {

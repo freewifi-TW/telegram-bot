@@ -8,7 +8,7 @@ describe("sortedRoles", () => {
   it("依新增順序，不受名稱影響", () => {
     const chat: ChatData = {
       welcome: { enabled: true, text: "" },
-      fixupMode: "reply",
+      fixupMode: "reply", announce: { enabled: true },
       roles: {
         c: { id: "c", name: "A最後建", createdAt: 300, members: {} },
         a: { id: "a", name: "Z最先建", createdAt: 100, members: {} },
@@ -65,7 +65,7 @@ describe("chunk", () => {
 describe("findRole", () => {
   const chat: ChatData = {
     welcome: { enabled: true, text: "" },
-    fixupMode: "reply",
+    fixupMode: "reply", announce: { enabled: true },
     roles: {
       a1: { id: "a1", name: "桌遊", createdAt: 0, members: {} },
       b2: { id: "b2", name: "Movie", createdAt: 0, members: {} },

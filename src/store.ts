@@ -36,11 +36,19 @@ export interface WelcomeSettings {
 
 export type FixupMode = "reply" | "replace" | "off";
 
+export interface AnnounceSettings {
+  /** bot 上下線時是否在這個群組發通知 */
+  enabled: boolean;
+  /** 要發到的話題 ID；undefined 表示 General */
+  threadId?: number;
+}
+
 export interface ChatData {
   title?: string;
   welcome: WelcomeSettings;
   roles: Record<string, Role>;
   fixupMode: FixupMode;
+  announce: AnnounceSettings;
 }
 
 interface Data {
@@ -56,6 +64,7 @@ function defaultChat(): ChatData {
     welcome: { enabled: true, text: DEFAULT_WELCOME },
     roles: {},
     fixupMode: "reply",
+    announce: { enabled: true },
   };
 }
 
@@ -132,6 +141,7 @@ export class Store {
         chat.welcome = { ...base.welcome, ...(chat.welcome ?? {}) };
         chat.roles ??= {};
         chat.fixupMode ??= base.fixupMode;
+        chat.announce = { ...base.announce, ...(chat.announce ?? {}) };
       }
     } catch (err) {
       console.error(`讀取資料檔 ${this.path} 失敗，將以空白資料啟動：`, err);
@@ -151,6 +161,11 @@ export class Store {
 
   user(userId: number): UserInfo | undefined {
     return this.data.users[String(userId)];
+  }
+
+  /** 所有看過的群組 id */
+  chatIds(): number[] {
+    return Object.keys(this.data.chats).map(Number);
   }
 
   touchUser(info: Omit<UserInfo, "lastSeen">) {

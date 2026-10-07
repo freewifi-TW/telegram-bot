@@ -84,6 +84,11 @@ npm run typecheck
 | `/welcome_on` / `/welcome_off` | 開關歡迎詞 |
 | `/welcome_test` | 用自己測試歡迎詞 |
 | `/fixup reply\|replace\|off` | 連結修正模式 |
+| `/announce` | 查看 bot 上下線通知設定（所有人可用） |
+| `/announce_topic` | 在想發上下線通知的話題裡執行，之後就發在那裡 |
+| `/announce_on` / `/announce_off` | 開關上下線通知 |
+
+bot 關閉時會對每個群組發「暫時下線維修囉汪汪」，啟動後發「我回來囉汪汪」，預設開啟、發在 General。身分組的排序依新增順序。
 
 歡迎詞可用變數：`{mention}`（會通知新成員）、`{name}`、`{username}`、`{group}`，並支援 HTML 標籤如 `<b>粗體</b>`。
 

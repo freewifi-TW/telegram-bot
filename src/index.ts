@@ -1,6 +1,7 @@
 import { Bot, GrammyError, HttpError } from "grammy";
 import type { BotCommand } from "grammy/types";
 import { config } from "./config.js";
+import { announce, broadcast, OFFLINE_TEXT, ONLINE_TEXT } from "./features/announce.js";
 import { fixup } from "./features/fixup.js";
 import { roles } from "./features/roles.js";
 import { sauce } from "./features/sauce.js";
@@ -62,6 +63,7 @@ bot.on("my_chat_member", (ctx) => {
 });
 
 bot.use(welcome);
+bot.use(announce);
 bot.use(roles);
 bot.use(sauce);
 // fixup 會監聽所有訊息，放最後確保指令先被處理
@@ -86,6 +88,8 @@ const adminCommands: BotCommand[] = [
   { command: "welcome_topic", description: "把歡迎詞發到目前話題" },
   { command: "welcome_test", description: "測試歡迎詞" },
   { command: "fixup", description: "連結修正模式 reply/replace/off" },
+  { command: "announce", description: "bot 上下線通知設定" },
+  { command: "announce_topic", description: "把上下線通知發到目前話題" },
 ];
 
 async function main() {
@@ -101,6 +105,11 @@ async function main() {
 
   const shutdown = async (signal: string) => {
     console.log(`收到 ${signal}，正在關閉…`);
+    // Docker 預設只給 10 秒，道別訊息最多等 6 秒，發不完就放棄
+    await Promise.race([
+      broadcast(bot.api, OFFLINE_TEXT),
+      new Promise<void>((resolve) => setTimeout(resolve, 6_000)),
+    ]);
     await bot.stop();
     store.flush();
     process.exit(0);
@@ -110,7 +119,10 @@ async function main() {
 
   await bot.start({
     allowed_updates: ["message", "callback_query", "chat_member", "my_chat_member"],
-    onStart: (me) => console.log(`✅ @${me.username} 已啟動（long polling）`),
+    onStart: (me) => {
+      console.log(`✅ @${me.username} 已啟動（long polling）`);
+      void broadcast(bot.api, ONLINE_TEXT);
+    },
   });
 }
 

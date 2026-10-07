@@ -17,6 +17,8 @@ fi
 
 cd "$DIR"
 sudo docker build -q -t machinechubbybot .
+# 先 stop 讓 bot 有時間發下線通知（SIGTERM，最多等 10 秒），再移除
+sudo docker stop machinechubbybot >/dev/null 2>&1 || true
 sudo docker rm -f machinechubbybot >/dev/null 2>&1 || true
 sudo docker run -d --name machinechubbybot --restart unless-stopped \
   --env-file .env -v machinechubbybot-data:/app/data machinechubbybot >/dev/null
