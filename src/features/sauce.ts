@@ -28,6 +28,16 @@ function pickImage(msg: Message | undefined): { fileId: string; name: string } |
   if (msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video) {
     return { fileId: msg.sticker.file_id, name: "sticker.webp" };
   }
+  // 影片類訊息沒辦法直接搜，改用 Telegram 附的縮圖（約 320px 的 JPEG）
+  const thumb =
+    msg.video?.thumbnail ??
+    msg.animation?.thumbnail ??
+    msg.video_note?.thumbnail ??
+    (msg.sticker?.is_video ? msg.sticker.thumbnail : undefined) ??
+    (msg.document?.mime_type?.startsWith("video/") ? msg.document.thumbnail : undefined);
+  if (thumb) {
+    return { fileId: thumb.file_id, name: "thumbnail.jpg" };
+  }
   return undefined;
 }
 
@@ -143,7 +153,7 @@ sauce.command(["source", "sauce", "search", "搜圖"], async (ctx) => {
   const target = pickImage(msg) ?? pickImage(msg.reply_to_message);
   if (!target) {
     await ctx.reply(
-      "請回覆一張圖片（或貼圖）再輸入 /source，或是在傳圖片時把 /source 當成說明文字。",
+      "請回覆一張圖片、貼圖或影片再輸入 /source，或是在傳圖片時把 /source 當成說明文字。",
     );
     return;
   }
