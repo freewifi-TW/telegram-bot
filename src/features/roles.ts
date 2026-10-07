@@ -36,7 +36,7 @@ function panelText(chat: ChatData): string {
     "",
     ...lines,
     "",
-    "用 /myroles 查看自己的身分組，/tag 名稱 可以一次通知整組的人。",
+    "用 /my_roles 查看自己的身分組，/tag 名稱 可以一次通知整組的人。",
   ].join("\n");
 }
 
@@ -131,7 +131,7 @@ roles.command(
 );
 
 roles.command(
-  "myroles",
+  "my_roles",
   groupOnly(async (ctx) => {
     if (!ctx.from) return;
     const chat = store.chat(ctx.chat!.id);

@@ -40,7 +40,7 @@ const HELP = [
   "",
   "🏷 <b>身分組</b>",
   "/roles — 叫出身分組面板，按按鈕加入或退出",
-  "/myroles — 看自己有哪些身分組",
+  "/my_roles — 看自己有哪些身分組",
   "/role_list — 所有身分組與人數",
   "/role_members 名稱 — 某身分組有誰",
   "/tag 名稱 [訊息] — 一次通知整個身分組",
@@ -73,7 +73,7 @@ bot.use(fixup);
 
 const groupCommands: BotCommand[] = [
   { command: "roles", description: "身分組面板" },
-  { command: "myroles", description: "我的身分組" },
+  { command: "my_roles", description: "我的身分組" },
   { command: "role_list", description: "所有身分組" },
   { command: "role_members", description: "某身分組有誰" },
   { command: "tag", description: "通知整個身分組：/tag 名稱 訊息" },
