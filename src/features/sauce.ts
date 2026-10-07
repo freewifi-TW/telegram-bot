@@ -138,12 +138,12 @@ function formatHits(title: string, hits: Hit[]): string {
   return `<b>${title}</b>\n${lines.join("\n")}`;
 }
 
-sauce.command(["sauce", "source", "search", "搜圖"], async (ctx) => {
+sauce.command(["source", "sauce", "search", "搜圖"], async (ctx) => {
   const msg = ctx.msg;
   const target = pickImage(msg) ?? pickImage(msg.reply_to_message);
   if (!target) {
     await ctx.reply(
-      "請回覆一張圖片（或貼圖）再輸入 /sauce，或是在傳圖片時把 /sauce 當成說明文字。",
+      "請回覆一張圖片（或貼圖）再輸入 /source，或是在傳圖片時把 /source 當成說明文字。",
     );
     return;
   }

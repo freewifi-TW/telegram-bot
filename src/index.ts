@@ -72,7 +72,7 @@ const groupCommands: BotCommand[] = [
   { command: "role_list", description: "所有身分組" },
   { command: "role_members", description: "某身分組有誰" },
   { command: "tag", description: "通知整個身分組：/tag 名稱 訊息" },
-  { command: "sauce", description: "回覆圖片以圖搜圖" },
+  { command: "source", description: "回覆圖片以圖搜圖" },
   { command: "help", description: "使用說明" },
 ];
 
@@ -93,7 +93,7 @@ async function main() {
   await bot.api.setMyCommands(
     [
       { command: "help", description: "使用說明" },
-      { command: "sauce", description: "回覆圖片以圖搜圖" },
+      { command: "source", description: "回覆圖片以圖搜圖" },
     ],
     { scope: { type: "all_private_chats" } },
   );

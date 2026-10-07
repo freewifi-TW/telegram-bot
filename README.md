@@ -8,7 +8,7 @@
 | 🏷 身分組 | 管理員建立身分組，成員透過面板按鈕自行加入／退出 |
 | 📣 一鍵 tag | `/tag 身分組 訊息` 一次通知整組的人 |
 | 🔗 連結修正 | x.com / twitter.com 推文連結自動轉成 fixupx.com |
-| 🔍 以圖搜圖 | 回覆圖片 `/sauce`，查 SauceNAO（Twitter、e621）與 e621 IQDB |
+| 🔍 以圖搜圖 | 回覆圖片 `/source`，查 SauceNAO（Twitter、e621）與 e621 IQDB |
 
 技術：Node.js 20、TypeScript、[grammY](https://grammy.dev/)。資料存在單一 JSON 檔，不需要資料庫。
 
@@ -61,7 +61,7 @@ npm start
 | `/role_list` | 所有身分組與人數 |
 | `/role_members 名稱` | 列出某身分組的成員（不會通知） |
 | `/tag 名稱 [訊息]` | 通知整個身分組，每組 30 秒內只能 tag 一次（管理員不限） |
-| `/sauce` | 回覆一張圖片（或貼圖）使用，也可以在傳圖時把 `/sauce` 當說明文字 |
+| `/source` | 回覆一張圖片（或貼圖）使用，也可以在傳圖時把 `/source` 當說明文字。別名 `/sauce` |
 | `/help` | 使用說明 |
 
 ### 管理員
