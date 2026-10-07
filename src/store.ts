@@ -48,6 +48,27 @@ export interface AnnounceSettings {
   threadId?: number;
 }
 
+export interface MemeSettings {
+  /** 是否啟用「私訊給我」按鈕 */
+  enabled: boolean;
+  /** 梗圖區的話題 ID；undefined 表示 General（或非話題群組的整個群組） */
+  threadId?: number;
+}
+
+export interface MemeFile {
+  kind: "photo" | "video" | "animation" | "document";
+  fileId: string;
+  /** document 重新上傳時用的檔名 */
+  fileName?: string;
+}
+
+/** 梗圖區一則訊息（或一組相簿）的檔案，key 為第一則訊息的 message id */
+export interface MemeEntry {
+  files: MemeFile[];
+  caption?: string;
+  at: number;
+}
+
 export interface ChatData {
   title?: string;
   /** bot 已離開或被踢出這個群組；設定保留，重新加入時自動清除 */
@@ -56,6 +77,8 @@ export interface ChatData {
   roles: Record<string, Role>;
   fixupMode: FixupMode;
   announce: AnnounceSettings;
+  meme: MemeSettings;
+  memes: Record<string, MemeEntry>;
 }
 
 interface Data {
@@ -72,6 +95,8 @@ function defaultChat(): ChatData {
     roles: {},
     fixupMode: "reply",
     announce: { enabled: true },
+    meme: { enabled: false },
+    memes: {},
   };
 }
 
@@ -149,6 +174,8 @@ export class Store {
         chat.roles ??= {};
         chat.fixupMode ??= base.fixupMode;
         chat.announce = { ...base.announce, ...(chat.announce ?? {}) };
+        chat.meme = { ...base.meme, ...(chat.meme ?? {}) };
+        chat.memes ??= {};
       }
     } catch (err) {
       console.error(`讀取資料檔 ${this.path} 失敗，將以空白資料啟動：`, err);

@@ -8,7 +8,7 @@ describe("sortedRoles", () => {
   it("依新增順序，不受名稱影響", () => {
     const chat: ChatData = {
       welcome: { enabled: true, text: "" },
-      fixupMode: "reply", announce: { enabled: true },
+      fixupMode: "reply", announce: { enabled: true }, meme: { enabled: false }, memes: {},
       roles: {
         c: { id: "c", name: "A最後建", createdAt: 300, members: {} },
         a: { id: "a", name: "Z最先建", createdAt: 100, members: {} },
@@ -65,7 +65,7 @@ describe("chunk", () => {
 describe("findRole", () => {
   const chat: ChatData = {
     welcome: { enabled: true, text: "" },
-    fixupMode: "reply", announce: { enabled: true },
+    fixupMode: "reply", announce: { enabled: true }, meme: { enabled: false }, memes: {},
     roles: {
       a1: { id: "a1", name: "桌遊", createdAt: 0, members: {} },
       b2: { id: "b2", name: "Movie", createdAt: 0, members: {} },
@@ -86,7 +86,7 @@ describe("rolesOfUser", () => {
   it("依該成員加入的先後排序，與身分組新增順序無關", () => {
     const chat: ChatData = {
       welcome: { enabled: true, text: "" },
-      fixupMode: "reply", announce: { enabled: true },
+      fixupMode: "reply", announce: { enabled: true }, meme: { enabled: false }, memes: {},
       roles: {
         a: { id: "a", name: "最早建", createdAt: 100, members: { "1": { id: 1, firstName: "x", lastSeen: 0, joinedAt: 300 } } },
         b: { id: "b", name: "後來建", createdAt: 200, members: { "1": { id: 1, firstName: "x", lastSeen: 0, joinedAt: 100 } } },
@@ -98,7 +98,7 @@ describe("rolesOfUser", () => {
   it("舊資料沒有 joinedAt 時用 lastSeen 當加入時間", () => {
     const chat: ChatData = {
       welcome: { enabled: true, text: "" },
-      fixupMode: "reply", announce: { enabled: true },
+      fixupMode: "reply", announce: { enabled: true }, meme: { enabled: false }, memes: {},
       roles: {
         a: { id: "a", name: "A", createdAt: 100, members: { "1": { id: 1, firstName: "x", lastSeen: 500 } } },
         b: { id: "b", name: "B", createdAt: 200, members: { "1": { id: 1, firstName: "x", lastSeen: 400 } } },

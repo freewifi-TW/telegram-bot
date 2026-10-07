@@ -4,6 +4,7 @@ import type { BotCommand } from "grammy/types";
 import { config } from "./config.js";
 import { announce, broadcast, OFFLINE_TEXT, ONLINE_TEXT } from "./features/announce.js";
 import { fixup } from "./features/fixup.js";
+import { handleMemeStart, memes } from "./features/memes.js";
 import { roles } from "./features/roles.js";
 import { sauce } from "./features/sauce.js";
 import { welcome } from "./features/welcome.js";
@@ -58,9 +59,16 @@ const HELP = [
   "",
   "🔗 <b>連結修正</b>",
   "看到 x.com、pixiv、Bluesky、Instagram、TikTok、Reddit 連結會自動補上能正常預覽的版本",
+  "",
+  "📩 <b>梗圖私訊</b>",
+  "群組開了禁止儲存時，梗圖區的附件下面會有「私訊給我」按鈕，按了 bot 就把原檔傳到你的私訊",
 ].join("\n");
 
-bot.command(["start", "help"], (ctx) => ctx.reply(HELP, { parse_mode: "HTML" }));
+bot.command(["start", "help"], async (ctx) => {
+  // 從梗圖按鈕導過來的 /start 帶有參數，先補送梗圖
+  if (await handleMemeStart(ctx)) return;
+  await ctx.reply(HELP, { parse_mode: "HTML" });
+});
 
 bot.on("my_chat_member", (ctx) => {
   const { chat, new_chat_member } = ctx.myChatMember;
@@ -79,6 +87,7 @@ bot.on("my_chat_member", (ctx) => {
 bot.use(welcome);
 bot.use(announce);
 bot.use(roles);
+bot.use(memes);
 bot.use(sauce);
 // fixup 會監聽所有訊息，放最後確保指令先被處理
 bot.use(fixup);
@@ -105,6 +114,8 @@ const adminCommands: BotCommand[] = [
   { command: "fixup", description: "連結修正模式 reply/replace/off" },
   { command: "announce", description: "bot 上下線通知設定" },
   { command: "announce_topic", description: "把上下線通知發到目前話題" },
+  { command: "meme_topic", description: "把目前話題設為梗圖區，附件下會有私訊按鈕" },
+  { command: "meme_off", description: "關閉梗圖私訊按鈕" },
 ];
 
 async function main() {
