@@ -116,6 +116,24 @@ docker run -d --name machinechubbybot --restart unless-stopped \
   --env-file .env -v machinechubbybot-data:/app/data machinechubbybot
 ```
 
+### GCP Compute Engine（目前的正式環境）
+
+一台 e2-micro 跑 Docker，`scripts/deploy.sh` 負責 clone / pull、建置、重啟容器，第一次部署與之後更新都用它。
+
+```bash
+# 第一次：把腳本和 .env 傳上去（.env 傳到家目錄並命名為 bot.env，腳本會搬到定位）
+scp scripts/deploy.sh VM:~/
+scp .env VM:~/bot.env
+ssh VM 'chmod +x ~/deploy.sh && ~/deploy.sh'
+
+# 之後更新：push 到 GitHub 後
+ssh VM '~/telegram-bot/scripts/deploy.sh'
+```
+
+資料在 Docker volume `machinechubbybot-data`，重建容器或更新程式都不會掉。看 log：`ssh VM 'sudo docker logs -f machinechubbybot'`。
+
+> 同一個 bot token 只能有一個程序在 polling，部署後本機的 `npm run dev` 要關掉，否則兩邊會互搶更新。
+
 ### Railway / Fly.io / Render
 
 這些平台都能直接吃這個 Dockerfile。要注意兩件事：
