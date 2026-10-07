@@ -48,7 +48,7 @@ const HELP = [
   "/tag 名稱 [訊息] — 一次通知整個身分組，訊息開頭打 @名稱 也可以",
   "",
   "🔍 <b>以圖搜圖</b>",
-  "回覆圖片輸入 /source，會查 SauceNAO（Twitter、e621）與 e621 IQDB",
+  "回覆圖片輸入 /source，會查 SauceNAO（Pixiv、Danbooru、e621、FurAffinity、Twitter）與 e621 IQDB",
   "",
   "🔗 <b>連結修正</b>",
   "看到 x.com、pixiv、Bluesky、Instagram、TikTok、Reddit 連結會自動補上能正常預覽的版本",

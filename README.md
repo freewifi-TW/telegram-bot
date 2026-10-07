@@ -8,7 +8,7 @@
 | 🏷 身分組 | 管理員建立身分組，成員透過面板按鈕自行加入／退出 |
 | 📣 一鍵 tag | `/tag 身分組 訊息` 一次通知整組的人 |
 | 🔗 連結修正 | x.com、pixiv、Bluesky、Instagram、TikTok、Reddit 連結自動轉成能正常預覽的版本 |
-| 🔍 以圖搜圖 | 回覆圖片 `/source`，查 SauceNAO（Twitter、e621）與 e621 IQDB |
+| 🔍 以圖搜圖 | 回覆圖片 `/source`，查 SauceNAO（Pixiv、Danbooru、e621、FurAffinity、Twitter）與 e621 IQDB |
 
 技術：Node.js 20、TypeScript、[grammY](https://grammy.dev/)。資料存在單一 JSON 檔，不需要資料庫。
 

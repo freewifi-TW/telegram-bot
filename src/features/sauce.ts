@@ -14,8 +14,20 @@ interface Hit {
   url?: string;
 }
 
+const SAUCENAO_DB_PIXIV = 5;
+const SAUCENAO_DB_DANBOORU = 9;
 const SAUCENAO_DB_E621 = 29;
+const SAUCENAO_DB_FURAFFINITY = 40;
 const SAUCENAO_DB_TWITTER = 41;
+/** 要查的 SauceNAO 索引；編號對照 https://saucenao.com/status.html */
+const SAUCENAO_DBS = [
+  SAUCENAO_DB_PIXIV,
+  SAUCENAO_DB_DANBOORU,
+  SAUCENAO_DB_E621,
+  SAUCENAO_DB_FURAFFINITY,
+  SAUCENAO_DB_TWITTER,
+];
+const SAUCENAO_LABEL = "SauceNAO（Pixiv / Danbooru / e621 / FurAffinity / Twitter）";
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 function pickImage(msg: Message | undefined): { fileId: string; name: string } | undefined {
@@ -69,8 +81,7 @@ async function searchSauceNao(image: ArrayBuffer, filename: string): Promise<Hit
   form.append("output_type", "2");
   form.append("numres", "8");
   if (config.sauceNao.apiKey) form.append("api_key", config.sauceNao.apiKey);
-  form.append("dbs[]", String(SAUCENAO_DB_E621));
-  form.append("dbs[]", String(SAUCENAO_DB_TWITTER));
+  for (const db of SAUCENAO_DBS) form.append("dbs[]", String(db));
   form.append("file", new Blob([image]), filename);
 
   const res = await fetch("https://saucenao.com/search.php", {
@@ -97,6 +108,15 @@ async function searchSauceNao(image: ArrayBuffer, filename: string): Promise<Hit
     } else if (r.header.index_id === SAUCENAO_DB_E621) {
       const parts = [str(d.creator) && `作者 ${str(d.creator)}`, str(d.characters)].filter(Boolean);
       label = parts.length ? parts.join("・") : "e621";
+    } else if (r.header.index_id === SAUCENAO_DB_PIXIV) {
+      const parts = [str(d.title), str(d.member_name) && `作者 ${str(d.member_name)}`].filter(Boolean);
+      label = parts.length ? parts.join("・") : "Pixiv";
+    } else if (r.header.index_id === SAUCENAO_DB_DANBOORU) {
+      const parts = [str(d.creator) && `作者 ${str(d.creator)}`, str(d.characters)].filter(Boolean);
+      label = parts.length ? parts.join("・") : "Danbooru";
+    } else if (r.header.index_id === SAUCENAO_DB_FURAFFINITY) {
+      const parts = [str(d.title), str(d.author_name) && `作者 ${str(d.author_name)}`].filter(Boolean);
+      label = parts.length ? parts.join("・") : "FurAffinity";
     } else {
       label = str(d.title) ?? str(d.source) ?? str(d.creator) ?? str(d.author_name) ?? r.header.index_name;
     }
@@ -183,7 +203,7 @@ sauce.command(["source", "sauce", "search", "搜圖"], async (ctx) => {
 
   const sections = [
     nao.status === "fulfilled"
-      ? formatHits("SauceNAO（Twitter / e621）", nao.value)
+      ? formatHits(SAUCENAO_LABEL, nao.value)
       : `<b>SauceNAO</b>\n　⚠️ ${escapeHtml((nao.reason as Error).message)}`,
     e6.status === "fulfilled"
       ? formatHits("e621 IQDB", e6.value)
