@@ -55,6 +55,7 @@ const HELP = [
   "/my_roles — 看自己有哪些身分組",
   "/role_list — 所有身分組與人數",
   "/role_members 名稱 — 某身分組有誰",
+  "以上三個查詢只有你自己看得到，不會洗版",
   "/tag 名稱 [訊息] — 一次通知整個身分組，訊息開頭打 @名稱 也可以",
   "加入的身分組會依加入順序顯示在你名字旁的成員標籤上",
   "",
@@ -98,9 +99,9 @@ bot.use(fixup);
 
 const groupCommands: BotCommand[] = [
   { command: "roles", description: "身分組面板" },
-  { command: "my_roles", description: "我的身分組" },
-  { command: "role_list", description: "所有身分組" },
-  { command: "role_members", description: "某身分組有誰" },
+  { command: "my_roles", description: "我的身分組", is_ephemeral: true },
+  { command: "role_list", description: "所有身分組", is_ephemeral: true },
+  { command: "role_members", description: "某身分組有誰", is_ephemeral: true },
   { command: "tag", description: "通知整個身分組：/tag 名稱 訊息" },
   { command: "source", description: "回覆圖片以圖搜圖" },
   { command: "help", description: "使用說明" },

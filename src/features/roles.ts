@@ -25,6 +25,17 @@ const TAG_COOLDOWN_MS = 30_000;
 
 const tagCooldown = new Map<string, number>();
 
+/**
+ * 只有下指令的人看得到的回覆（Bot API 10.2 ephemeral message）。
+ * 查詢類指令用這個才不會洗版；指令本身要不要隱藏，由 setMyCommands 的 is_ephemeral 決定。
+ */
+async function whisper(ctx: Context, text: string, extra: { parse_mode?: "HTML" } = {}): Promise<void> {
+  await ctx.reply(text, {
+    ...extra,
+    ephemeral_message_parameters: { receiver_user_id: ctx.from!.id },
+  });
+}
+
 /** 依新增順序排列（createdAt 相同時再比名稱，確保順序穩定） */
 export function sortedRoles(chat: ChatData): Role[] {
   return Object.values(chat.roles).sort(
@@ -289,14 +300,14 @@ roles.command(
     const chat = store.chat(ctx.chat!.id);
     const list = sortedRoles(chat);
     if (list.length === 0) {
-      await ctx.reply("目前沒有任何身分組。");
+      await whisper(ctx, "目前沒有任何身分組。");
       return;
     }
     const lines = list.map((r) => {
       const desc = r.description ? ` — ${escapeHtml(r.description)}` : "";
       return `• <b>${escapeHtml(r.name)}</b>（${memberCount(r)} 人）${desc}`;
     });
-    await ctx.reply(`<b>身分組列表</b>\n${lines.join("\n")}`, { parse_mode: "HTML" });
+    await whisper(ctx, `<b>身分組列表</b>\n${lines.join("\n")}`, { parse_mode: "HTML" });
   }),
 );
 
@@ -316,12 +327,13 @@ roles.command(
     const mine = sortedRoles(chat).filter((r) => r.members[String(ctx.from!.id)]);
     const who = escapeHtml(ctx.from.first_name);
     if (mine.length === 0) {
-      await ctx.reply(`${who} 目前沒有任何身分組，用 /roles 叫出面板來加入。`, {
+      await whisper(ctx, `${who} 目前沒有任何身分組，用 /roles 叫出面板來加入。`, {
         parse_mode: "HTML",
       });
       return;
     }
-    await ctx.reply(
+    await whisper(
+      ctx,
       `<b>${who}</b> 的身分組：\n${mine.map((r) => `• ${escapeHtml(r.name)}`).join("\n")}`,
       { parse_mode: "HTML" },
     );
@@ -335,18 +347,19 @@ roles.command(
     const { name } = parseArgs(ctx.match);
     const role = name ? findRole(chat, name) : undefined;
     if (!role) {
-      await ctx.reply("用法：/role_members 名稱");
+      await whisper(ctx, "用法：/role_members 名稱");
       return;
     }
     const members = Object.values(role.members);
     if (members.length === 0) {
-      await ctx.reply(`「${role.name}」目前還沒有人。`);
+      await whisper(ctx, `「${role.name}」目前還沒有人。`);
       return;
     }
     const names = members
       .map((m) => store.user(m.id) ?? m)
       .map((m) => escapeHtml(m.firstName) + (m.username ? ` (@${m.username})` : ""));
-    await ctx.reply(
+    await whisper(
+      ctx,
       `<b>${escapeHtml(role.name)}</b>（${members.length} 人）\n${names.map((n) => `• ${n}`).join("\n")}`,
       { parse_mode: "HTML" },
     );
