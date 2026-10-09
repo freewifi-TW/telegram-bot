@@ -122,7 +122,7 @@ bot 關閉時會對每個群組發「暫時下線維修囉汪汪」，啟動後�
 | x.com、twitter.com 推文 | fixupx.com |
 | pixiv.net 作品 | phixiv.net |
 | bsky.app 貼文 | fxbsky.app |
-| instagram.com 貼文、Reel | ddinstagram.com |
+| instagram.com 貼文、Reel | instagramfix.com |
 | tiktok.com 影片（含 vm. / vt. 短網址） | vxtiktok.com |
 | reddit.com 貼文 | rxddit.com |
 

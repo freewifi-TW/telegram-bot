@@ -51,7 +51,7 @@ export const RULES: Rule[] = [
       String.raw`https?://(?:www\.)?instagram\.com/(?:[A-Za-z0-9_.]+/)?(p|reels?|tv)/([A-Za-z0-9_-]+)${TAIL}`,
       "gi",
     ),
-    fix: (m) => `https://ddinstagram.com/${m[1].toLowerCase() === "reels" ? "reel" : m[1].toLowerCase()}/${m[2]}`,
+    fix: (m) => `https://instagramfix.com/${m[1].toLowerCase() === "reels" ? "reel" : m[1].toLowerCase()}/${m[2]}`,
   },
   {
     site: "TikTok",
