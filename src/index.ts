@@ -63,7 +63,7 @@ const HELP = [
   "回覆圖片輸入 /source，會查 SauceNAO（Pixiv、Danbooru、e621、FurAffinity、Twitter）、e621 IQDB 與 Fluffle（FurAffinity、Twitter、Bluesky 等獸人圈站台）",
   "",
   "🔗 <b>連結修正</b>",
-  "看到 x.com、pixiv、Bluesky、Instagram、TikTok、Reddit 連結會自動補上能正常預覽的版本",
+  "看到 x.com、pixiv、Instagram 連結會自動補上能正常預覽的版本",
   "",
   "📩 <b>梗圖私訊</b>",
   "群組開了禁止儲存時，梗圖區的附件下面會有「私訊給我」按鈕，按了 bot 就把原檔傳到你的私訊",

@@ -38,34 +38,12 @@ export const RULES: Rule[] = [
     fix: (m) => `https://phixiv.net/artworks/${m[1] ?? m[2]}`,
   },
   {
-    site: "Bluesky",
-    re: new RegExp(
-      String.raw`https?://(?:www\.)?bsky\.app/profile/([^\s/<>()]+)/post/([A-Za-z0-9]+)${TAIL}`,
-      "gi",
-    ),
-    fix: (m) => `https://fxbsky.app/profile/${m[1]}/post/${m[2]}`,
-  },
-  {
     site: "Instagram",
     re: new RegExp(
       String.raw`https?://(?:www\.)?instagram\.com/(?:[A-Za-z0-9_.]+/)?(p|reels?|tv)/([A-Za-z0-9_-]+)${TAIL}`,
       "gi",
     ),
     fix: (m) => `https://instagramfix.com/${m[1].toLowerCase() === "reels" ? "reel" : m[1].toLowerCase()}/${m[2]}`,
-  },
-  {
-    site: "TikTok",
-    // 含 vm. / vt. 短網址，直接換域名、保留路徑
-    re: new RegExp(String.raw`https?://((?:www\.|m\.|vm\.|vt\.)?)tiktok\.com/([^\s<>()?#]+)${TAIL}`, "gi"),
-    fix: (m) => `https://${m[1]}vxtiktok.com/${m[2]}`,
-  },
-  {
-    site: "Reddit",
-    re: new RegExp(
-      String.raw`https?://(?:www\.|old\.|new\.)?reddit\.com/(r/[^\s/<>()]+/comments/[A-Za-z0-9]+[^\s<>()?#]*)${TAIL}`,
-      "gi",
-    ),
-    fix: (m) => `https://rxddit.com/${m[1]}`,
   },
 ];
 

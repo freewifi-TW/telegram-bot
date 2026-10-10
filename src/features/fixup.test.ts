@@ -12,14 +12,9 @@ describe("fixText", () => {
     ["https://www.pixiv.net/artworks/98765432", "https://phixiv.net/artworks/98765432"],
     ["https://www.pixiv.net/en/artworks/111", "https://phixiv.net/artworks/111"],
     ["https://www.pixiv.net/member_illust.php?mode=medium&illust_id=222", "https://phixiv.net/artworks/222"],
-    ["https://bsky.app/profile/alice.bsky.social/post/3kabc123", "https://fxbsky.app/profile/alice.bsky.social/post/3kabc123"],
     ["https://www.instagram.com/p/Cxyz_12-A/?igsh=abc", "https://instagramfix.com/p/Cxyz_12-A"],
     ["https://www.instagram.com/reels/Cabc123/", "https://instagramfix.com/reel/Cabc123"],
     ["https://www.instagram.com/someuser/reel/Cdef456/", "https://instagramfix.com/reel/Cdef456"],
-    ["https://www.tiktok.com/@user.name/video/7123456789?lang=en", "https://www.vxtiktok.com/@user.name/video/7123456789"],
-    ["https://vm.tiktok.com/ZMabc123/", "https://vm.vxtiktok.com/ZMabc123/"],
-    ["https://www.reddit.com/r/aww/comments/1abc2de/cute_cat/?utm_source=share", "https://rxddit.com/r/aww/comments/1abc2de/cute_cat/"],
-    ["https://old.reddit.com/r/aww/comments/1abc2de", "https://rxddit.com/r/aww/comments/1abc2de"],
   ];
   for (const [input, expected] of cases) {
     it(`${input} → ${expected}`, () => {
@@ -28,12 +23,12 @@ describe("fixText", () => {
   }
 
   it("已經修正過的連結不動", () => {
-    const text = "https://fixupx.com/foo/status/1 https://phixiv.net/artworks/1 https://fxbsky.app/profile/a/post/b";
+    const text = "https://fixupx.com/foo/status/1 https://phixiv.net/artworks/1 https://instagramfix.com/p/abc";
     assert.equal(fixText(text), text);
   });
 
   it("不是貼文的連結不動", () => {
-    for (const text of ["https://x.com/foo", "https://www.pixiv.net/users/123", "https://www.reddit.com/r/aww/"]) {
+    for (const text of ["https://x.com/foo", "https://www.pixiv.net/users/123", "https://www.instagram.com/someuser/"]) {
       assert.equal(fixText(text), text);
     }
   });
